@@ -1,6 +1,6 @@
 local M = {}
 
-M.version = "0.7.0"
+M.version = "0.7.1"
 
 M.dependencies = { "nvim-lua/plenary.nvim", "echasnovski/mini.icons" }
 M.namespace = vim.api.nvim_create_namespace("norminette")
@@ -11,6 +11,7 @@ M.has_flake8 = nil
 M.has_plenary = nil
 M.has_async = nil
 M.prefix = "●"
+M.no_colors = true
 
 local function is_command_available(command)
 	local handle = io.popen("command -v " .. command .. " 2>/dev/null")
@@ -23,16 +24,38 @@ local function is_command_available(command)
 	return result ~= ""
 end
 
+local function parse_version(version_str)
+	local major, minor, patch = version_str:match("(%d+)%.(%d+)%.(%d+)")
+	if not major then
+		return nil
+	end
+	return tonumber(major), tonumber(minor), tonumber(patch)
+end
+
 local function check_norminette_install()
-	if not is_command_available("norminette") then
+	if (vim.bo.filetype == "c" or vim.bo.filetype == "cpp") and not is_command_available("norminette") then
 		vim.notify("norminette not installed or not in PATH. C linting is disabled", vim.log.levels.ERROR)
 		return false
+	end
+	local handle = io.popen("norminette -v 2>/dev/null")
+	if handle then
+		local output = handle:read("*a")
+		handle:close()
+		local version_str = output:match("norminette (%d+%.%d+%.%d+)")
+		if version_str then
+			local major, minor, patch = parse_version(version_str)
+			if major or (major < 3 or (major == 3 and minor < 3) or (major == 3 and minor == 3 and patch < 56)) then
+				M.no_colors = false
+			else
+				M.no_colors = true
+			end
+		end
 	end
 	return true
 end
 
 local function check_flake8_install()
-	if not is_command_available("flake8") then
+	if vim.bo.filetype == "python" and not is_command_available("flake8") then
 		vim.notify("flake8 not installed or not in PATH. Python linting is disabled", vim.log.levels.ERROR)
 		return false
 	end
@@ -119,7 +142,12 @@ local function run_norminette_check(bufnr, namespace)
 	M.has_async.run(function()
 		local output = nil
 		if filetype == "c" or filetype == "cpp" then
-			output = vim.fn.system("norminette " .. vim.fn.shellescape(filename))
+			if M.no_colors then
+				output = vim.fn.system({ "norminette", "--no-color", filename })
+			else
+				output = vim.fn.system({ "norminette", filename })
+				-- output = vim.fn.system({ "norminette", filename })
+			end
 		else
 			output = vim.fn.system("flake8 " .. vim.fn.shellescape(filename))
 		end
