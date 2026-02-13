@@ -86,6 +86,15 @@ To report a bug or ask for a feature, please open a [Github issue](https://githu
 ## Changelog
 All notable changes to this project will be documented in this file.
 
+### [0.7.1] - 2026-02-13
+
+#### Added
+- Added support for `norminette` versions after `3.3.56`, that introduced colors and `--no-color` flag and ANSI escape codes were appearing on diagnostics. Still works with older versions. Closes Issue #4
+
+#### Changed
+- Only check installation of `norminette` and `flake8` in their correct filetypes (`C` and `Python` respectively).
+
+
 ### [0.7] - 2025-05-09
 
 #### Added
