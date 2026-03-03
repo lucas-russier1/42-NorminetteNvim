@@ -44,7 +44,7 @@ local function check_norminette_install()
 		local version_str = output:match("norminette (%d+%.%d+%.%d+)")
 		if version_str then
 			local major, minor, patch = parse_version(version_str)
-			if major or (major < 3 or (major == 3 and minor < 3) or (major == 3 and minor == 3 and patch < 56)) then
+			if not major or (major < 3 or (major == 3 and minor < 3) or (major == 3 and minor == 3 and patch < 56)) then
 				M.no_colors = false
 			else
 				M.no_colors = true
