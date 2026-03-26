@@ -7,7 +7,7 @@ It works for `.c` ,`.h` and `.py` files.
 ## Install
 
 <details>
-	
+
 <summary> <b>📦 Packer 📦</b></summary>
 
 ``` lua
@@ -86,6 +86,11 @@ To report a bug or ask for a feature, please open a [Github issue](https://githu
 ## Changelog
 All notable changes to this project will be documented in this file.
 
+### [0.7.2] - 2026-03-26
+
+#### BugFix
+- Fixed version check logic for norminette --no-colors flag always evaluating to true
+
 ### [0.7.1] - 2026-02-13
 
 #### Added
@@ -93,7 +98,6 @@ All notable changes to this project will be documented in this file.
 
 #### Changed
 - Only check installation of `norminette` and `flake8` in their correct filetypes (`C` and `Python` respectively).
-
 
 ### [0.7] - 2025-05-09
 
@@ -151,26 +155,26 @@ All notable changes to this project will be documented in this file.
 - Added diagnostic_color, not working (yet).
 
 ### [0.3] - 2024-09-07
-  
+
  - #### Added
 In this version I added asynchronous task for the norminette so there won't be a slowdown
- 
+
 #### Fixed
  - On the previous version the toggle wasn't working properly because it wasn't clearning the diagnostics after running the command.
 
 Still doesn't Work in 42 yet.
 
 ### [0.2] - 2024-09-06
-  
+
 In this version I added asynchronous task for the norminette so there won't be a slowdown
- 
+
 #### Changed
-- Added [Plenary](https://github.com/nvim-lua/plenary.nvim) for async task for norminette. 
+- Added [Plenary](https://github.com/nvim-lua/plenary.nvim) for async task for norminette.
 
 ### [0.1] - 2024-08-28
- 
+
 ### Added
-   
+
 - This is the first Version, it's working outside the 42's Computers.
 
 ## License
