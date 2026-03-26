@@ -1,6 +1,6 @@
 local M = {}
 
-M.version = "0.7.1"
+M.version = "0.7.2"
 
 M.dependencies = { "nvim-lua/plenary.nvim", "echasnovski/mini.icons" }
 M.namespace = vim.api.nvim_create_namespace("norminette")
@@ -44,7 +44,7 @@ local function check_norminette_install()
 		local version_str = output:match("norminette (%d+%.%d+%.%d+)")
 		if version_str then
 			local major, minor, patch = parse_version(version_str)
-			if major or (major < 3 or (major == 3 and minor < 3) or (major == 3 and minor == 3 and patch < 56)) then
+			if not major or (major < 3 or (major == 3 and minor < 3) or (major == 3 and minor == 3 and patch < 56)) then
 				M.no_colors = false
 			else
 				M.no_colors = true
@@ -146,7 +146,6 @@ local function run_norminette_check(bufnr, namespace)
 				output = vim.fn.system({ "norminette", "--no-color", filename })
 			else
 				output = vim.fn.system({ "norminette", filename })
-				-- output = vim.fn.system({ "norminette", filename })
 			end
 		else
 			output = vim.fn.system("flake8 " .. vim.fn.shellescape(filename))
