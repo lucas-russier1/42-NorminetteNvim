@@ -204,7 +204,7 @@ local function update_function_sizes(bufnr)
 		local size = end_row - start_row - 2
 
 		vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, 0, {
-			virt_text = { { "  [" .. size .. "]", "NorminetteFunctionSize" } },
+			virt_text = { { "  " .. size, "NorminetteFunctionSize" } },
 			virt_text_pos = "eol",
 		})
 	end
