@@ -174,7 +174,7 @@ local function update_status()
 
 	local icon = icons.get("filetype", "nginx")
 	if M.toggle_state then
-		vim.api.nvim_set_hl(0, "NorminetteStatus", { fg = "#00ff00", bold = true })
+		vim.api.nvim_set_hl(0, "NorminetteStatus", { link = "DiagnosticHint", bold = true })
 		vim.opt.statusline:append("%#NorminetteStatus#")
 		vim.opt.statusline:append(" " .. icon .. " ")
 		vim.opt.statusline:append("%*")
@@ -204,7 +204,7 @@ local function update_function_sizes(bufnr)
 		local size = end_row - start_row - 2
 
 		vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, 0, {
-			virt_text = { { "Size: " .. size .. " lines", "Comment" } },
+			virt_text = { { "  [" .. size .. "]", "NorminetteFunctionSize" } },
 			virt_text_pos = "eol",
 		})
 	end
@@ -328,7 +328,8 @@ function M.setup(opts)
 	if opts.size_keybind then
 		vim.keymap.set("n", opts.size_keybind, toggle_size, { noremap = true, silent = true })
 	end
-	vim.api.nvim_set_hl(0, "NorminetteDiagnostic", { bg = "#00ff00" })
+	vim.api.nvim_set_hl(0, "NorminetteDiagnostic", { link = "DiagnosticHint", default = true })
+	vim.api.nvim_set_hl(0, "NorminetteFunctionSize", { link = "Comment", default = true })
 	vim.api.nvim_create_user_command("NorminetteToggle", function()
 		toggle_norminette()
 	end, {})
