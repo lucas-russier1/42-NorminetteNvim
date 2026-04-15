@@ -133,6 +133,25 @@ local function clear_diagnostics(namespace, bufnr)
 	vim.diagnostic.reset(namespace, bufnr)
 end
 
+local function update_status(has_errors)
+	local icons_ok, icons = pcall(require, "mini.icons")
+	if not icons_ok then
+		error("This plugin requires mini.icons. Please install it to use this plugin.")
+		return
+	end
+
+	local icon = icons.get("filetype", "nginx")
+	if M.toggle_state then
+		local hl = has_errors and "DiagnosticError" or "DiagnosticHint"
+		vim.api.nvim_set_hl(0, "NorminetteStatus", { link = hl, bold = true })
+		local st_line = vim.opt.statusline:get()
+		st_line = st_line:gsub("%#NorminetteStatus#%s*%" .. icon .. "%s*%%*", "")
+		vim.opt.statusline = st_line .. "%#NorminetteStatus# " .. icon .. " %*"
+	else
+		vim.opt.statusline = vim.opt.statusline:get():gsub("%#NorminetteStatus#%s*%" .. icon .. "%s*%%*", "")
+	end
+end
+
 local function run_norminette_check(bufnr, namespace)
 	if not vim.bo.readonly and vim.fn.expand("%") ~= "" and vim.bo.buftype == "" then
 		vim.api.nvim_command("silent update")
@@ -161,26 +180,9 @@ local function run_norminette_check(bufnr, namespace)
 		vim.schedule(function()
 			vim.diagnostic.reset(namespace, bufnr)
 			vim.diagnostic.set(namespace, bufnr, diagnostics)
+			update_status(#diagnostics > 0)
 		end)
 	end)
-end
-
-local function update_status()
-	local icons_ok, icons = pcall(require, "mini.icons")
-	if not icons_ok then
-		error("This plugin requires mini.icons. Please install it to use this plugin.")
-		return
-	end
-
-	local icon = icons.get("filetype", "nginx")
-	if M.toggle_state then
-		vim.api.nvim_set_hl(0, "NorminetteStatus", { link = "DiagnosticHint", bold = true })
-		vim.opt.statusline:append("%#NorminetteStatus#")
-		vim.opt.statusline:append(" " .. icon .. " ")
-		vim.opt.statusline:append("%*")
-	else
-		vim.opt.statusline = vim.opt.statusline:get():gsub("%#NorminetteStatus#%s*%" .. icon .. "%s*%%*", "")
-	end
 end
 
 local function correct_filetype()
@@ -280,6 +282,7 @@ local function toggle_norminette()
 		print("NorminetteAutoCheck enable")
 	else
 		clear_autocmds_and_messages()
+		update_status(false)
 		print("NorminetteAutoCheck disable")
 	end
 	update_status()
