@@ -9,9 +9,9 @@ M.show_size = true
 M.has_norminette = nil
 M.has_flake8 = nil
 M.has_plenary = nil
-M.has_async = nil
 M.prefix = "●"
 M.no_colors = true
+M.debounce_ms = 300
 
 local function is_command_available(command)
 	local handle = io.popen("command -v " .. command .. " 2>/dev/null")
@@ -63,10 +63,10 @@ local function check_flake8_install()
 end
 
 local function init_tool_check()
-	M.has_plenary, M.has_async = pcall(require, "plenary.async")
+	M.has_plenary = pcall(require, "plenary.async")
 	M.has_flake8 = check_flake8_install()
 	M.has_norminette = check_norminette_install()
-	if not M.has_plenary or not M.has_async then
+	if not M.has_plenary then
 		vim.notify("This plugin requires plenary.nvim. Please install it to use this plugin.", vim.log.levels.ERROR)
 		return false
 	end
@@ -158,31 +158,59 @@ local function run_norminette_check(bufnr, namespace)
 	end
 	local filename = vim.api.nvim_buf_get_name(bufnr)
 	local filetype = vim.bo.filetype
-	M.has_async.run(function()
-		local output = nil
-		if filetype == "c" or filetype == "cpp" then
-			if M.no_colors then
-				output = vim.fn.system({ "norminette", "--no-color", filename })
-			else
-				output = vim.fn.system({ "norminette", filename })
+
+	local cmd, args
+	if filetype == "c" or filetype == "cpp" then
+		cmd = "norminette"
+		args = M.no_colors and { "--no-color", filename } or { filename }
+	else
+		cmd = "flake8"
+		args = { filename }
+	end
+
+	require("plenary.job")
+		:new({
+			command = cmd,
+			args = args,
+			on_exit = vim.schedule_wrap(function(j, _)
+				if not vim.api.nvim_buf_is_valid(bufnr) then
+					return
+				end
+				local output = table.concat(j:result(), "\n")
+				local diagnostics
+				if filetype == "c" or filetype == "cpp" then
+					diagnostics = parse_c_output(output)
+				else
+					diagnostics = parse_python_output(output)
+				end
+				vim.diagnostic.reset(namespace, bufnr)
+				vim.diagnostic.set(namespace, bufnr, diagnostics)
+				update_status(#diagnostics > 0)
+			end),
+		})
+		:start()
+end
+
+local debounce_timer = nil
+local function run_debounced_check(bufnr, namespace)
+	-- if a timer is running, we close it
+	if debounce_timer then
+		debounce_timer:stop()
+		debounce_timer:close()
+	end
+	debounce_timer = vim.loop.new_timer()
+	if not debounce_timer then
+		return
+	end
+	debounce_timer:start(
+		M.debounce_ms,
+		0,
+		vim.schedule_wrap(function()
+			if vim.api.nvim_buf_is_valid(bufnr) then
+				run_norminette_check(bufnr, namespace)
 			end
-		else
-			output = vim.fn.system("flake8 " .. vim.fn.shellescape(filename))
-		end
-		return output
-	end, function(output)
-		local diagnostics = nil
-		if filetype == "c" or filetype == "cpp" then
-			diagnostics = parse_c_output(output)
-		else
-			diagnostics = parse_python_output(output)
-		end
-		vim.schedule(function()
-			vim.diagnostic.reset(namespace, bufnr)
-			vim.diagnostic.set(namespace, bufnr, diagnostics)
-			update_status(#diagnostics > 0)
 		end)
-	end)
+	)
 end
 
 local function correct_filetype()
@@ -233,7 +261,7 @@ local function setup_autocmds_and_run()
 		callback = function()
 			setup_clear_diagnostics_autocmd(vim.api.nvim_get_current_buf())
 			if M.toggle_state then
-				run_norminette_check(vim.api.nvim_get_current_buf(), M.namespace)
+				run_debounced_check(vim.api.nvim_get_current_buf(), M.namespace)
 			else
 				clear_autocmds_and_messages()
 			end
@@ -314,6 +342,7 @@ function M.setup(opts)
 		size_keybind = "<leader>ns",
 		show_size = true,
 		prefix = "●",
+		debounce_ms = 300,
 	}
 	for key, value in pairs(default_opts) do
 		if opts[key] == nil then
@@ -323,6 +352,7 @@ function M.setup(opts)
 
 	M.show_size = opts.show_size
 	M.prefix = opts.prefix
+	M.debounce_ms = 300
 
 	if opts.norm_keybind then
 		vim.keymap.set("n", opts.norm_keybind, toggle_norminette, { noremap = true, silent = true })
